@@ -5,8 +5,10 @@ This fork by Arvind Shyamsundar is a Class Library version which can then be inv
 
 Here's the Python sample:
 
+```python
 import dotnet.seamless
-dotnet.add_assemblies(r"<< Folder Path to where you built SpeechClientSample.dll but NO file name ")
+dotnet.add_assemblies(r"<< Folder Path to where you built SpeechClientSample.dll but NO file name >>")
 dotnet.load_assembly("SpeechClientSample")
 from SpeechClientSample import SpeechAPIWrapper
-SpeechAPIWrapper.InvokeBingSpeechWebSocketAPI(r" <<Full path to .WAV file including file name>> ", "en-US", "Long", r"<<API_KEY>>")
+SpeechAPIWrapper.InvokeBingSpeechWebSocketAPI(r"<< Full path to .WAV file including file name>>", "en-US", "Long", r"<<API_KEY>>")
+```
