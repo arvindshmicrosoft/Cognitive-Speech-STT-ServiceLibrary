@@ -15,11 +15,12 @@ namespace SpeechClientSample
     using System.Threading.Tasks;
     using CognitiveServicesAuthorization;
     using Microsoft.Bing.Speech;
+    using System.Text;
 
     /// <summary>
     /// This sample program shows how to use <see cref="SpeechClient"/> APIs to perform speech recognition.
     /// </summary>
-    public class Program
+    public class SpeechAPIWrapper
     {
         /// <summary>
         /// Short phrase mode URL
@@ -41,36 +42,25 @@ namespace SpeechClientSample
         /// </summary>
         private readonly CancellationTokenSource cts = new CancellationTokenSource();
 
+        internal static StringBuilder finalResult = new StringBuilder();
+
         /// <summary>
         /// The entry point to this sample program. It validates the input arguments
         /// and sends a speech recognition request using the Microsoft.Bing.Speech APIs.
         /// </summary>
         /// <param name="args">The input arguments.</param>
-        public static void Main(string[] args)
+        public static string InvokeBingSpeechWebSocketAPI(
+            string WAVFile,
+            string Locale,
+            string LongOrShort,
+            string APIKey
+            )
         {
-            // Validate the input arguments count.
-            if (args.Length < 4)
-            {
-                DisplayHelp("Invalid number of arguments.");
-                return;
-            }
-
-            // Ensure the audio file exists.
-            if (!File.Exists(args[0]))
-            {
-                DisplayHelp("Audio file not found.");
-                return;
-            }
-
-            if (!"long".Equals(args[2], StringComparison.OrdinalIgnoreCase) && !"short".Equals(args[2], StringComparison.OrdinalIgnoreCase))
-            {
-                DisplayHelp("Invalid RecognitionMode.");
-                return;
-            }
-
             // Send a speech recognition request for the audio.
-            var p = new Program();
-            p.Run(args[0], args[1], char.ToLower(args[2][0]) == 'l' ? LongDictationUrl : ShortPhraseUrl, args[3]).Wait();
+            var p = new SpeechAPIWrapper();
+            p.CallAPI(WAVFile, Locale, char.ToLower(LongOrShort[0]) == 'l' ? LongDictationUrl : ShortPhraseUrl, APIKey).Wait();
+
+            return finalResult.ToString();
         }
 
         /// <summary>
@@ -82,12 +72,7 @@ namespace SpeechClientSample
         /// </returns>
         public Task OnPartialResult(RecognitionPartialResult args)
         {
-            Console.WriteLine("--- Partial result received by OnPartialResult ---");
-
-            // Print the partial response recognition hypothesis.
-            Console.WriteLine(args.DisplayText);
-
-            Console.WriteLine();
+            // this is too verbose for most needs, removing
 
             return CompletedTask;
         }
@@ -102,22 +87,18 @@ namespace SpeechClientSample
         public Task OnRecognitionResult(RecognitionResult args)
         {
             var response = args;
-            Console.WriteLine();
 
-            Console.WriteLine("--- Phrase result received by OnRecognitionResult ---");
-
-            // Print the recognition status.
-            Console.WriteLine("***** Phrase Recognition Status = [{0}] ***", response.RecognitionStatus);
             if (response.Phrases != null)
             {
                 foreach (var result in response.Phrases)
                 {
                     // Print the recognition phrase display text.
-                    Console.WriteLine("{0} (Confidence:{1})", result.DisplayText, result.Confidence);
+                    var resultText = string.Format("{0} (Confidence:{1})", result.DisplayText, result.Confidence);
+
+                    finalResult.AppendLine(resultText);
                 }
             }
 
-            Console.WriteLine();
             return CompletedTask;
         }
 
@@ -131,7 +112,7 @@ namespace SpeechClientSample
         /// <returns>
         /// A task
         /// </returns>
-        public async Task Run(string audioFile, string locale, Uri serviceUrl, string subscriptionKey)
+        public async Task CallAPI(string audioFile, string locale, Uri serviceUrl, string subscriptionKey)
         {
             // create the preferences object
             var preferences = new Preferences(locale, serviceUrl, new CognitiveServicesAuthorizationProvider(subscriptionKey));
@@ -152,27 +133,6 @@ namespace SpeechClientSample
                     await speechClient.RecognizeAsync(new SpeechInput(audio, requestMetadata), this.cts.Token).ConfigureAwait(false);
                 }
             }
-        }
-
-        /// <summary>
-        /// Display the list input arguments required by the program.
-        /// </summary>
-        /// <param name="message">The message.</param>
-        private static void DisplayHelp(string message = null)
-        {
-            if (string.IsNullOrEmpty(message))
-            {
-                message = "SpeechClientSample Help";
-            }
-
-            Console.WriteLine(message);
-            Console.WriteLine();
-            Console.WriteLine("Arg[0]: Specify an input audio wav file.");
-            Console.WriteLine("Arg[1]: Specify the audio locale.");
-            Console.WriteLine("Arg[2]: Recognition mode [Short|Long].");
-            Console.WriteLine("Arg[3]: Specify the subscription key to access the Speech Recognition Service.");
-            Console.WriteLine();
-            Console.WriteLine("Sign up at https://www.microsoft.com/cognitive-services/ with a client/subscription id to get a client secret key.");
         }
     }
 }
